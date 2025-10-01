@@ -1,9 +1,9 @@
 {
     "name": "JSP Dev Environment",
-    "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
     "features": {
       "ghcr.io/devcontainers/features/git:1": {},
-      "python": "3.12" 
+      "python": "3.13"
     },
     "runArgs": ["--add-host=host.docker.internal:host-gateway"],
     "customizations": {

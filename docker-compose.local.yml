@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    image: psyexperiments/frontend
+    container_name: psyexperiments-frontend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    image: psyexperiments/backend
+    container_name: psyexperiments-backend
+    environment:
+      - OSF_API_TOKEN=${OSF_API_TOKEN}
+      - OSF_RESOURCE_ID=${OSF_RESOURCE_ID}
+      - HOST_URL=${SERVER_NAME}
+    restart: unless-stopped
+
+  proxy:
+    build:
+      context: ./proxy
+    image: psyexperiments/proxy
+    container_name: psyexperiments-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - SERVER_NAME=${SERVER_NAME}
+      - EMAIL=${EMAIL}
+      - FRONTEND_HOST=${FRONTEND_HOST}
+      - FRONTEND_PORT=${FRONTEND_PORT}
+      - BACKEND_HOST=${BACKEND_HOST}
+      - BACKEND_PORT=${BACKEND_PORT}
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - dhparam:/etc/ssl/certs
+    restart: unless-stopped
+
+volumes:
+  certbot-etc:
+  certbot-var:
+  dhparam:
+
+
+

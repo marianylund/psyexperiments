@@ -4,42 +4,15 @@ This is a repository for running experiments on the web using jspsych library. C
 
 ## Table of Contents
 
-- [Website code](#website-code)
 - [Data parsing (python)](#data-parsing-python)
 - [NREC server](#nrec-server)
+- [Development](#development)
+- [.env configuration](#env-configuration)
+- [CI: Build and publish Docker images to GHCR](#ci-build-and-publish-docker-images-to-ghcr)
 - [Future work](#future-work)
 - [License](#license)
 - [Contact](#contact)
 
-## Website code
-
-Prerequisites:
-
-- Node v18.18.2 https://nodejs.org/en/blog/release/v18.18.2
-- Python
-
-### Backend
-
-It handles the server-side logic and API endpoints. Currently, listens to requests on the server from frontend and once experiment raw data is sent, it uploads the JSON to OSF. Which OSF project it uploads to depends on the values defined in .env:
-
-(!) Important: Requires a file called .env inside backend folder to run correctly with two variables:
-
-```
-OSF_API_TOKEN = [insert long token]
-OSF_RESOURCE_ID = [insert some id]
-```
-
-Get token from https://osf.io/settings/tokens, resource id can be found in the address when you go to the project: https://osf.io/some_id_here/ instead of `some_id_here`. Those are secret variables, therefore not added to the repo.
-First time running project, remember to install packages by running `npm install`.
-Run `npm run start` to start running the backend, when testing.
-
-### Frontend
-
-The frontend is built using [jspsych builder](https://github.com/bjoluc/jspsych-builder).
-
-Uses a new [video-several-keyboard-responses](https://github.com/jspsych/jspsych-contrib/tree/main/packages/plugin-video-several-keyboard-responses) plugin for the video experiment.
-
-Run `npm run start experiment` to start running the specific js file in this case `experiment.js`, when testing. Remember to run `npm build` the first time setting up the project.
 
 ## Data parsing (python)
 
@@ -67,32 +40,20 @@ If it is the first time accessing the server, you need to create SSH key on your
 2. In the console of your choice run `ssh -i ~/.ssh/nrec ubuntu@158.37.63.194`, where `~/.ssh/nrec` is the path to the SSH key on your machine.
 3. (Ignore for now) If you have set up that only logged-in users can join the server you´ll need to alternatively run `ssh -J username@login.uio.no -i ~/.ssh/nrec ubuntu@158.37.63.194`, where `username` is your UiO username.
 
-### Update
+#### Local
 
-So, you have added changes to the repo and want to update the server, first [access the server](#access-ssh) through ssh.
-
-#### Manual
+To host locally you can follow these steps
 
 1. Go into the repo folder and run `git pull` to get the changes
-2. Go into the frontend folder, run `npm run install` if new libraries were added
-3. Run `npm run build` where ? is the name of the js script describing the experiment is.
-4. If it is the first time the new experiment is added, add location/ as in [example](https://gist.github.com/leommoore/2701379) to `sites-enabled/JSP` file and
+2. Create .env file based on .env.example
+3. Run `docker compose -f docker-compose.local.yml up` which will build the project locally and start it
 
-```
-root /var/www/experiment;
-index index.html index.htm;
-```
+To update this you need to run 
+1. `docker compose down`
+2. `git pull`
+3. `docker compose -f docker-compose.local.yml up`
 
-5. If you have built this experiment before, run `sudo rm /var/www/experiment/ -r` to delete it
-6. Move dist folder to `/var/www/experiment/` by running `sudo mv experiment /var/www` inside the dist folder
-7. To update backend run build and install inside backend folder
-8. Might need to run `sudo systemctl restart nginx` to restart nginx
-
-#### Semi-automatic
-
-TODO: Add a bash script to run the commands described in [manual](#manual) automatically.
-
-### Set-up a new one
+### Run on a server with automatic updates
 
 In case the server needs to be set up again, otherwise feel free to ignore this section. Here are some steps in broad terms needed to achieve that:
 
@@ -102,24 +63,130 @@ In case the server needs to be set up again, otherwise feel free to ignore this 
    - DUAL network protocols (UiO VPN does not create IPv6, only IPv4)
 3. Set up Security Group as described [here](https://docs.nrec.no/security-groups.html#id12) with SSH and HTTPS open from all IP addresses.
 4. [Access the server](#access-ssh)
-5. Set up git read access to this repo and clone it
-6. Install nginx and allow it to pass the firewall, [guide](https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-22-04)
-   - Go to `/etc/nginx/sites-enabled` and create file named JSP
-   - Copy text from [here](https://pm2.keymetrics.io/docs/tutorials/pm2-nginx-production-setup), change `server_name 158.37.63.194` and listen to 80, Remove cert options
-   - `sudo systemctl restart nginx` to restart nginx
-7. Install node, [guide](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04#option-3-installing-node-using-the-node-version-manager)
-8. Install pm2 `npm install pm2 -g` to automatically run and restart node
-   - Add file to backend as in the [example](https://pm2.keymetrics.io/docs/usage/environment/)
-     - Run `pm2 start ecosystem.config.js --env production` and `pm2 save`
-   - To check health: `pm2 status` or `pm2 log`
-9. Build and serve as described in [Update](#update) server section.
+5. If docker is not installed, install docker https://docs.docker.com/engine/install/ubuntu/ 
+6. If you have firewall installed, make sure 80 and 443 is allowed
+7. Copy docker-compose.ghcr.yml to the server
+8. Create .env file similar to .env.example and add valid values
+9. Run everything with this command `docker compose -f docker-compose.ghcr.yml up`, the software should automatically update when changes are published
+
+
+# Development 
+
+## Website code
+
+Prerequisites:
+
+- Node https://nodejs.org/en/blog/release/
+- Python
+
+### Backend
+
+Handles server-side logic and API endpoints. It uploads experiment data JSON to OSF. Configure via root `.env` (see Configuration section). Get token from `https://osf.io/settings/tokens`; resource id is in the project URL.
+
+### Frontend
+
+The frontend is built using [jspsych builder](https://github.com/bjoluc/jspsych-builder).
+
+Uses a new [video-several-keyboard-responses](https://github.com/jspsych/jspsych-contrib/tree/main/packages/plugin-video-several-keyboard-responses) plugin for the video experiment.
+
+Run `npm run start experiment` to start running the specific js file in this case `experiment.js`, when testing. Remember to run `npm build` the first time setting up the project.
+
+
+## .env configuration
+
+Create a `.env` file at the repository root. These variables configure both local and server deployments via the compose files.
+
+- OSF_API_TOKEN: Personal access token from OSF used by the backend to upload data. Obtain from `https://osf.io/settings/tokens`.
+- OSF_RESOURCE_ID: The OSF project identifier where data should be uploaded. This is the part in the project URL after `https://osf.io/`.
+- HOST_URL: The public host used by the backend for constructing absolute URLs if needed (e.g., `example.com`). Often the same as `SERVER_NAME`.
+- SERVER_NAME: Domain name that Nginx/Certbot will use for TLS certificates (e.g., `example.com`). Required by the `proxy` service.
+- EMAIL: Email address for Certbot registration and expiry notices. Required by the `proxy` service.
+- FRONTEND_HOST: Hostname (Docker service name) of the frontend that Nginx should route to. Default: `frontend`.
+- FRONTEND_PORT: Port exposed by the frontend container. Default: `80`.
+- BACKEND_HOST: Hostname (Docker service name) of the backend that Nginx should route to. Default: `backend`.
+- BACKEND_PORT: Port exposed by the backend container. Default: `3001`.
+
+Example skeleton:
+
+```env
+# Backend (OSF integration)
+OSF_API_TOKEN=
+OSF_RESOURCE_ID=
+
+# Proxy / Certbot
+SERVER_NAME=example.com
+EMAIL=admin@example.com
+
+# Upstreams for proxy
+# Should not require change
+FRONTEND_HOST=localhost
+FRONTEND_PORT=8080
+BACKEND_HOST=localhost
+BACKEND_PORT=3001
+```
+
+If your GHCR images are private, authenticate once on the host using a token with package:read before starting the stack:
+
+```bash
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u <your_github_username> --password-stdin
+```
+
+## CI: Build and publish Docker images to GHCR
+
+This repository includes a GitHub Actions workflow that builds and publishes Docker images to the GitHub Container Registry (GHCR).
+
+- Workflow file: `.github/workflows/publish-images.yml`
+- Triggers: push to `main`, any tag (e.g., `v1.2.3`), and manual dispatch
+- Registry: `ghcr.io`
+- Images published:
+  - `ghcr.io/<owner>/psyexperiments-frontend`
+  - `ghcr.io/<owner>/psyexperiments-backend`
+  - `ghcr.io/<owner>/psyexperiments-proxy`
+- Tags applied automatically:
+  - `latest` on default branch
+  - Tag ref (e.g., `v1.2.3`) on tag builds
+  - Commit SHA tag on any build
+
+### Permissions
+
+The workflow uses the repository `GITHUB_TOKEN` to authenticate to GHCR. Ensure Actions has permission to write packages:
+
+1. Repo settings → Actions → General → Workflow permissions: enable “Read and write permissions”.
+2. If in an organization, ensure GHCR publishing is allowed for the repository.
+
+### Using with docker-compose
+
+If you want `docker-compose` to use the published images instead of building locally, set the `image` names to the GHCR images and remove the `build` sections (or override via an additional compose file):
+
+```yaml
+services:
+  frontend:
+    image: ghcr.io/<owner>/psyexperiments-frontend:latest
+  backend:
+    image: ghcr.io/<owner>/psyexperiments-backend:latest
+  proxy:
+    image: ghcr.io/<owner>/psyexperiments-proxy:latest
+```
+
+Replace `<owner>` with your GitHub username or org name.
+
+### Configuration via root .env
+
+Compose files read variables from a root `.env` file. Create `.env` at the repo root and fill in values. If you have `.env.example`, you can copy it as a starting point:
+
+```bash
+cp .env.example .env
+```
+
+Variables used by the stack:
+
+- `OSF_API_TOKEN`, `OSF_RESOURCE_ID`, `HOST_URL` (backend)
+- `SERVER_NAME`, `EMAIL` (proxy + certbot)
+- `FRONTEND_HOST`, `FRONTEND_PORT`, `BACKEND_HOST`, `BACKEND_PORT` (proxy upstreams)
 
 ## Future work
 
-- [ ] Set-up domain name on the server
 - [ ] Implement UiO footer and header on the frontpage
-- [ ] Add https certificate using https://certbot.eff.org/, right now we only have http
-- [ ] Move frontend to public git repo, there is nothing secret
 - [ ] Add more safety in the `index.js` in `backend` code to check body size of requests and query length
 - [ ] (Optional to make life easier) Set-up git hooks, so when there is an update, server re-builds and moves changes automatically
 

@@ -12,10 +12,7 @@ const strftime = require("strftime");
 const port = 3001; // should be different from frontend
 
 var corsOptions = {
-  origin:
-    process.env.NODE_ENV === "production"
-      ? "http://158.37.63.194/"
-      : "http://localhost:3000",
+  origin: `https://${process.env.HOST_URL}` ?? "http://localhost:3000",
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
