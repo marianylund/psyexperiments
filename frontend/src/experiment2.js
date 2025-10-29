@@ -50,7 +50,7 @@ export async function run({
   // Welcome screen
   var welcome_screen = {
     type: HtmlKeyboardResponsePlugin,
-    stimulus: "<p>Welcome to Local github! Press any key to go further<p/>",
+    stimulus: "<p>Welcome to Experiment 2! Press any key to go further<p/>",
   };
 
   // Switch to fullscreen
