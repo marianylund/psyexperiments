@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - multiple_experiments
     tags:
       - "v*"
       - "*.*.*"
