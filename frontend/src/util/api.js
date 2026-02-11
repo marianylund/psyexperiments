@@ -6,7 +6,7 @@ const sendData = (data) => {
   console.log(params);
   const host = location.host.startsWith("localhost")
     ? "http://localhost:3001/?" // Why no /api? there?
-    : "/api?";
+    : "/api/?";
   //fetch("http://localhost:3001/?" + params, {
   fetch(host + params, {
     headers: { "Content-Type": "application/json" },
